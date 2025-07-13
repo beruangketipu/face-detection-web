@@ -1,136 +1,120 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.6">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  <meta charset="UTF-8">
+  <title>Deteksi Wajah Real-Time</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #000;
+      color: #fff;
+      text-align: center;
+    }
+    video, canvas {
+      margin-top: 20px;
+      border: 2px solid #fff;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="id"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Deteksi Wajah Real-Time&lt;/title&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface"&gt;&lt;/script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>body {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>margin: 0;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>font-family: sans-serif;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>background: #000;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>color: #fff;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>text-align: center;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>video, canvas {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>border: 2px solid #fff;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>button {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>padding: 10px 20px;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>font-size: 16px;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;Deteksi Wajah Real-Time&lt;/h1&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;video id="webcam" width="640" height="480" autoplay muted playsinline&gt;&lt;/video&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;canvas id="overlay" width="640" height="480"&gt;&lt;/canvas&gt;&lt;br&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;button id="startBtn"&gt;Start Kamera&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;button id="stopBtn" disabled&gt;Stop Kamera&lt;/button&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>let model, webcamStream, animationId;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const video = document.getElementById('webcam');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const canvas = document.getElementById('overlay');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const ctx = canvas.getContext('2d');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const startBtn = document.getElementById('startBtn');</p>
-<p class="p1"><span class="Apple-converted-space">    </span>const stopBtn = document.getElementById('stopBtn');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>async function setupCamera() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });</p>
-<p class="p1"><span class="Apple-converted-space">      </span>video.srcObject = webcamStream;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>return new Promise(resolve =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>video.onloadedmetadata = () =&gt; resolve(video);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>});</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>async function detectFaces() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const predictions = await model.estimateFaces(video, false);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>ctx.clearRect(0, 0, canvas.width, canvas.height);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>ctx.drawImage(video, 0, 0, canvas.width, canvas.height);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (predictions.length &gt; 0) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>for (let pred of predictions) {</p>
-<p class="p1"><span class="Apple-converted-space">          </span>const [x, y] = pred.topLeft;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>const [x2, y2] = pred.bottomRight;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>const width = x2 - x;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>const height = y2 - y;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">          </span>ctx.strokeStyle = "lime";</p>
-<p class="p1"><span class="Apple-converted-space">          </span>ctx.lineWidth = 3;</p>
-<p class="p1"><span class="Apple-converted-space">          </span>ctx.strokeRect(x, y, width, height);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">          </span>// Ambil snapshot wajah</p>
-<p class="p1"><span class="Apple-converted-space">          </span>takeSnapshot();</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>animationId = requestAnimationFrame(detectFaces);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function takeSnapshot() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const snapshotCanvas = document.createElement('canvas');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>snapshotCanvas.width = canvas.width;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>snapshotCanvas.height = canvas.height;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const snapshotCtx = snapshotCanvas.getContext('2d');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>snapshotCtx.drawImage(video, 0, 0, canvas.width, canvas.height);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const imageData = snapshotCanvas.toDataURL('image/png');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>// Buat tautan download otomatis</p>
-<p class="p1"><span class="Apple-converted-space">      </span>const link = document.createElement('a');</p>
-<p class="p1"><span class="Apple-converted-space">      </span>link.href = imageData;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>link.download = `wajah_terdeteksi_${Date.now()}.png`;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>link.click();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>async function startApp() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>startBtn.disabled = true;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>stopBtn.disabled = false;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>model = await blazeface.load();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>await setupCamera();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>video.play();</p>
-<p class="p1"><span class="Apple-converted-space">      </span>detectFaces();</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>function stopApp() {</p>
-<p class="p1"><span class="Apple-converted-space">      </span>startBtn.disabled = false;</p>
-<p class="p1"><span class="Apple-converted-space">      </span>stopBtn.disabled = true;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>if (webcamStream) {</p>
-<p class="p1"><span class="Apple-converted-space">        </span>webcamStream.getTracks().forEach(track =&gt; track.stop());</p>
-<p class="p1"><span class="Apple-converted-space">      </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">      </span>cancelAnimationFrame(animationId);</p>
-<p class="p1"><span class="Apple-converted-space">      </span>ctx.clearRect(0, 0, canvas.width, canvas.height);</p>
-<p class="p1"><span class="Apple-converted-space">    </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>startBtn.onclick = startApp;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>stopBtn.onclick = stopApp;</p>
-<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+  <h1>Deteksi Wajah Real-Time</h1>
+  <video id="webcam" width="640" height="480" autoplay muted playsinline></video>
+  <canvas id="overlay" width="640" height="480"></canvas><br>
+
+  <button id="startBtn">Start Kamera</button>
+  <button id="stopBtn" disabled>Stop Kamera</button>
+
+  <script>
+    let model, webcamStream, animationId;
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('overlay');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+
+    async function setupCamera() {
+      webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = webcamStream;
+      return new Promise(resolve => {
+        video.onloadedmetadata = () => resolve(video);
+      });
+    }
+
+    async function detectFaces() {
+      const predictions = await model.estimateFaces(video, false);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (predictions.length > 0) {
+        for (let pred of predictions) {
+          const [x, y] = pred.topLeft;
+          const [x2, y2] = pred.bottomRight;
+          const width = x2 - x;
+          const height = y2 - y;
+
+          ctx.strokeStyle = "lime";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, width, height);
+
+          // Ambil snapshot wajah
+          takeSnapshot();
+        }
+      }
+
+      animationId = requestAnimationFrame(detectFaces);
+    }
+
+    function takeSnapshot() {
+      const snapshotCanvas = document.createElement('canvas');
+      snapshotCanvas.width = canvas.width;
+      snapshotCanvas.height = canvas.height;
+      const snapshotCtx = snapshotCanvas.getContext('2d');
+      snapshotCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = snapshotCanvas.toDataURL('image/png');
+
+      // Buat tautan download otomatis
+      const link = document.createElement('a');
+      link.href = imageData;
+      link.download = `wajah_terdeteksi_${Date.now()}.png`;
+      link.click();
+    }
+
+    async function startApp() {
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+
+      model = await blazeface.load();
+      await setupCamera();
+      video.play();
+      detectFaces();
+    }
+
+    function stopApp() {
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      if (webcamStream) {
+        webcamStream.getTracks().forEach(track => track.stop());
+      }
+
+      cancelAnimationFrame(animationId);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    startBtn.onclick = startApp;
+    stopBtn.onclick = stopApp;
+  </script>
+
 </body>
 </html>
