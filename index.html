@@ -18,7 +18,7 @@
       border: 2px solid #fff;
     }
     button {
-      margin-top: 20px;
+      margin: 10px;
       padding: 10px 20px;
       font-size: 16px;
       cursor: pointer;
@@ -33,14 +33,21 @@
 
   <button id="startBtn">Start Kamera</button>
   <button id="stopBtn" disabled>Stop Kamera</button>
+  <button id="detectBtn" disabled>Aktifkan Deteksi Wajah</button>
 
   <script>
     let model, webcamStream, animationId;
+    let detectionOn = false;
+    let lastCaptureTime = 0;
+    const captureInterval = 5000; // 5 detik
+
     const video = document.getElementById('webcam');
     const canvas = document.getElementById('overlay');
     const ctx = canvas.getContext('2d');
+
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const detectBtn = document.getElementById('detectBtn');
 
     async function setupCamera() {
       webcamStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -56,8 +63,14 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      if (predictions.length > 0) {
-        for (let pred of predictions) {
+      if (detectionOn && predictions.length > 0) {
+        const now = Date.now();
+        if (now - lastCaptureTime > captureInterval) {
+          lastCaptureTime = now;
+          takeSnapshot();
+        }
+
+        predictions.forEach(pred => {
           const [x, y] = pred.topLeft;
           const [x2, y2] = pred.bottomRight;
           const width = x2 - x;
@@ -66,10 +79,7 @@
           ctx.strokeStyle = "lime";
           ctx.lineWidth = 3;
           ctx.strokeRect(x, y, width, height);
-
-          // Ambil snapshot wajah
-          takeSnapshot();
-        }
+        });
       }
 
       animationId = requestAnimationFrame(detectFaces);
@@ -83,7 +93,6 @@
       snapshotCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = snapshotCanvas.toDataURL('image/png');
 
-      // Buat tautan download otomatis
       const link = document.createElement('a');
       link.href = imageData;
       link.download = `wajah_terdeteksi_${Date.now()}.png`;
@@ -93,6 +102,7 @@
     async function startApp() {
       startBtn.disabled = true;
       stopBtn.disabled = false;
+      detectBtn.disabled = false;
 
       model = await blazeface.load();
       await setupCamera();
@@ -103,6 +113,8 @@
     function stopApp() {
       startBtn.disabled = false;
       stopBtn.disabled = true;
+      detectBtn.disabled = true;
+      detectionOn = false;
 
       if (webcamStream) {
         webcamStream.getTracks().forEach(track => track.stop());
@@ -114,6 +126,10 @@
 
     startBtn.onclick = startApp;
     stopBtn.onclick = stopApp;
+    detectBtn.onclick = () => {
+      detectionOn = !detectionOn;
+      detectBtn.textContent = detectionOn ? 'Matikan Deteksi Wajah' : 'Aktifkan Deteksi Wajah';
+    };
   </script>
 
 </body>
